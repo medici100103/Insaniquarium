@@ -90,6 +90,7 @@ UI 구성
 스페이스바: 배속 기능(4x 배속)
 
 이미지 소스:
+ChatGPT 프롬프트 텍스트 생성 후 이를 기반으로 이미지 생성
 Alien.png - 3x3 스프라이트 시트
 Alien_Portal.png - 3x3 스프라이트 시트
 Background_Hatchery.png
@@ -114,3 +115,15 @@ StripedMarlin_Anger.png 3x3 스프라이트 시트
 StripedMarlinDefault.png 3x3 스프라이트 시트
 UI_ItemSlot.png
 UI_MoneySlot.png
+
+사운드 소스:
+ChatGPT 프롬프트 텍스트 생성 후 이를 기반으로 ElevenLabs에서 사운드 생성
+AlienAppearance.mp3
+Background_Alien.mp3
+Background_Default.mp3
+Carnibore.mp3
+EggDestruction.mp3
+FishDrop.mp3
+Hit.mp3
+MoneyAcquisition.mp3
+UIClick.mp3

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081e29">
+  <meta name="description" content="먹이를 주고, 구피를 키우고, 작은 바다를 지켜 주세요. 클릭으로 즐기는 수족관 육성 게임.">
+  <title>Aqua Guppy · 구피의 작은 바다</title>
+  <link rel="icon" href="Images/Money_Pearl.png">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/config.js" defer></script>
+  <script src="js/entities.js" defer></script>
+  <script src="js/game.js" defer></script>
+  <script src="js/audio.js" defer></script>
+  <script src="js/input.js" defer></script>
+  <script src="js/main.js" defer></script>
+</head>
+<body>
+  <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 8c3-5 6 5 10 0s7 5 10 0M2 15c3-5 6 5 10 0s7 5 10 0"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-muted" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM16 9l6 6m0-6-6 6"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 4 3c-1 .5-1 1-1 2m0 3h.01"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+    <symbol id="i-pointer" viewBox="0 0 24 24"><path d="m5 3 3 17 4-6 7-2zM15 16l4 5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-fish" viewBox="0 0 24 24"><path d="M3 12s4-7 10-5l6-4v7l3 2-3 2v7l-6-4C7 19 3 12 3 12Z"/><path d="M8 11h.01" stroke-width="3"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 20C2 7 10 3 21 3c0 11-6 16-13 13M4 21 16 9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-restart" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 1 8M3 4v6h6"/></symbol>
+  </defs></svg>
+
+  <main class="app-shell">
+    <header class="page-header">
+      <a class="brand" href="./index.html" aria-label="Aqua Guppy 처음부터 시작">
+        <span class="brand-mark"><svg><use href="#i-wave"/></svg></span>
+        <span><span class="brand-name">Aqua Guppy<span class="brand-dot">.</span></span><span class="brand-caption">구피의 작은 바다</span></span>
+      </a>
+      <nav class="journey" aria-label="스테이지 진행">
+        <span class="journey-step current" data-stage="1"><b>01</b><span>작은 시작</span></span><i></i>
+        <span class="journey-step" data-stage="2"><b>02</b><span>새로운 친구</span></span><i></i>
+        <span class="journey-step" data-stage="3"><b>03</b><span>바다의 수호자</span></span>
+      </nav>
+      <button id="help-button" class="help-button" type="button"><svg><use href="#i-help"/></svg><span>플레이 가이드</span></button>
+    </header>
+
+    <section class="game-section" aria-label="구피 키우기 게임">
+      <div class="game-topline"><span><i class="live-dot"></i> MY LITTLE OCEAN</span><span id="stage-subtitle">작은 구피와 시작하는 바다</span></div>
+      <div id="tank" class="tank" aria-label="수족관. 빈 곳을 클릭하면 5달러 사료를 줍니다.">
+        <div class="water-light" aria-hidden="true"></div>
+        <div id="world" class="world"><div id="bubbles" class="bubbles" aria-hidden="true"></div><div id="entities"></div><div id="effects" aria-hidden="true"></div></div>
+        <div id="arrivals" class="world arrival-layer" aria-hidden="true"></div>
+        <div class="shop" role="group" aria-label="수족관 상점">
+          <button class="shop-item locked" data-buy="guppy" type="button" aria-disabled="true">
+            <span class="shop-label">아기 구피</span><span class="shop-icon sprite guppy-icon"></span>
+            <strong class="price">$100</strong><small class="item-detail">구피 2/3 성장 시</small>
+          </button>
+          <button class="shop-item locked" data-buy="capacity" type="button" aria-disabled="true">
+            <span class="shop-label">사료 확장</span><span class="shop-icon food-icon"><img src="Images/Prey.png" alt=""><i>+</i></span>
+            <strong class="price">$100</strong><small class="item-detail">구피 2/3 성장 시</small>
+          </button>
+          <button class="shop-item locked" data-buy="piranha" type="button" aria-disabled="true">
+            <span class="shop-label">피라냐</span><span class="shop-icon sprite piranha-icon"></span>
+            <strong class="price">$1,000</strong><small class="item-detail">스테이지 1-2부터</small>
+          </button>
+          <button class="shop-item locked egg-item" data-buy="egg" type="button" aria-disabled="true">
+            <span class="shop-label">신비한 알</span><span id="shop-egg" class="shop-icon egg-sprite"></span>
+            <strong id="egg-price" class="price">$300</strong><small class="item-detail">성체 구피 성장 시</small>
+          </button>
+        </div>
+        <div class="wallet" aria-label="보유 재화"><span>보유 코인</span><strong><img src="Images/Money_GoldCoin.png" alt=""><span id="money">100</span><small>$</small></strong></div>
+        <div class="tank-counters"><span><svg><use href="#i-fish"/></svg><b id="fish-count">2</b> 마리</span><span><svg><use href="#i-leaf"/></svg>사료 <b id="food-count">0 / 3</b></span></div>
+        <div id="egg-goal" class="egg-goal" hidden><span class="goal-eyebrow">이번 바다의 목표</span><strong>신비한 알 부화시키기</strong><div class="egg-progress" aria-label="알 조각 0 / 3"><i></i><i></i><i></i><span id="egg-count">0 / 3</span></div></div>
+        <div id="threat-banner" class="threat-banner" hidden><span class="alert-pulse"></span><strong id="threat-title">에일리언 접근 중</strong><span id="threat-detail">잠시 후 포탈이 열립니다</span></div>
+        <div class="tank-bottom"><div class="stage-tag"><small>STAGE</small><strong id="stage-label">1-1</strong><span id="stage-name">첫 번째 물결</span></div><div id="message" class="message" role="status"><svg><use href="#i-pointer"/></svg><span>화면을 눌러 구피에게 사료를 주세요!</span></div><span class="water-depth">A LITTLE CARE, A LOT OF LIFE.</span></div>
+
+        <div id="loading" class="loading-overlay"><span class="loading-pearl"></span><p>작은 바다를 준비하고 있어요<span id="load-progress"></span></p></div>
+        <div id="pause-overlay" class="overlay pause-overlay" hidden><div class="modal-card compact"><span class="modal-kicker">TAKE A BREATH</span><h2>잠시 쉬어 가요</h2><p>구피들도 기다리고 있어요.</p><button id="resume-button" class="primary-button" type="button">계속 플레이 <svg><use href="#i-play"/></svg></button></div></div>
+        <div id="gameover-overlay" class="overlay" hidden><div class="modal-card"><span class="modal-kicker">UNTIL THE NEXT WAVE</span><span class="lost-fish sprite"></span><h2>게임오버!</h2><p>작은 바다가 잠시 조용해졌어요.<br>다시 한번 구피들을 돌봐 줄까요?</p><div class="result-line">모은 코인 <strong id="gameover-coins">$0</strong></div><button class="primary-button" data-restart type="button">다시 하기 <svg><use href="#i-restart"/></svg></button></div></div>
+        <div id="hatchery" class="hatchery" hidden><div class="hatchery-wash"></div><div class="hatchery-content"><span id="hatch-kicker" class="modal-kicker">A NEW FRIEND</span><h2 id="hatch-title">알에서 무언가 깨어나고 있어요</h2><div class="reward-stage"><span class="reward-halo"></span><div id="reward-egg" class="egg-sprite"></div><div id="reward-pet" class="sprite" hidden></div><span class="reward-spark s1">✦</span><span class="reward-spark s2">✧</span><span class="reward-spark s3">✦</span></div><p id="hatch-description">새로운 친구를 만날 준비를 해 주세요.</p><div id="ending-stats" class="ending-stats" hidden></div><button id="next-stage" class="primary-button" type="button" hidden>다음 바다로 <svg><use href="#i-arrow"/></svg></button><button id="ending-restart" class="primary-button" data-restart type="button" hidden>다시 바다로 <svg><use href="#i-restart"/></svg></button></div></div>
+      </div>
+      <footer class="control-bar"><div class="quick-hint"><svg><use href="#i-pointer"/></svg><span>빈 곳을 클릭해 먹이 주기 <b>$5</b><i>·</i> 동전을 클릭해 모으기</span></div><div class="game-controls"><button id="speed-button" class="speed-button" type="button" title="개발용: 스페이스바 또는 버튼을 누르는 동안 3배속"><span id="speed-label">1×</span><span>홀드</span><kbd>SPACE</kbd></button><span class="control-divider"></span><button id="pause-button" class="icon-button" type="button" title="일시정지 (P)" aria-label="일시정지"><svg><use href="#i-pause"/></svg></button><button id="sound-button" class="icon-button" type="button" title="배경음·효과음 끄기" aria-label="게임 소리 끄기" aria-pressed="true"><svg><use href="#i-sound"/></svg></button><button id="fullscreen-button" class="icon-button" type="button" title="전체 화면" aria-label="전체 화면"><svg><use href="#i-expand"/></svg></button></div></footer>
+    </section>
+
+    <p class="mobile-tip">가로 화면에서 더 넓은 바다를 만나 보세요.</p>
+    <section class="field-notes" aria-label="플레이 팁"><span class="notes-label">작은 바다 사용법</span><p><span>01</span> 먹이를 주면 구피가 자라요</p><p><span>02</span> 자란 구피가 코인을 선물해요</p><p><span>03</span> 알 조각 3개로 친구를 만나요</p></section>
+    <footer class="page-footer"><span>천천히, 나만의 바다를 키워 보세요.</span><span>AQUA GUPPY <i>✦</i> A TINY OCEAN ADVENTURE</span></footer>
+  </main>
+  <dialog id="guide-dialog"><div class="guide-head"><span class="modal-kicker">YOUR OCEAN FIELD GUIDE</span><button id="close-guide" class="icon-button" type="button" aria-label="가이드 닫기">×</button></div><h2>작은 바다를 돌보는 법</h2><p class="guide-intro">구피를 키워 코인을 모으고, 알 조각 3개를 완성하세요.</p><div class="guide-grid"><article><span>01 / 먹이와 성장</span><h3>작은 관심으로, 쑥쑥.</h3><p>빈 곳을 누르면 $5 사료가 생겨요. 구피는 배고프거나 굶주릴 때만 먹이를 먹어요. 구피는 사료 3개로 2/3 크기, 4개를 더 먹으면 성체로 자라요. 초록색으로 변하면 서둘러 먹이를 주세요.</p></article><article><span>02 / 코인과 상점</span><h3>반짝이는 것을 모아요.</h3><p>은화 $15 · 금화 $25 · 보석 $500 · 진주 $350. 클릭해서 모으세요. 구피가 자라면 상점이 열려요. 알은 스테이지마다 3회 구매해야 해요.</p></article><article><span>03 / 새로운 친구</span><h3>함께라서 든든해요.</h3><p>1-2의 조개는 입을 열면 5초 동안 진주를 줘요. 1-3의 청새치는 에일리언을 공격해요. 피라냐는 사료 대신 아기 구피를 먹는다는 점도 기억하세요.</p></article><article><span>04 / 수족관 지키기</span><h3>에일리언을 클릭!</h3><p>1-2부터 60초마다 나타나요. 30번 클릭하면 처치할 수 있어요. 전투 중엔 허기와 구피의 코인 생성이 멈추고 사료를 줄 수 없어요. 모든 물고기를 잃으면 게임오버예요.</p></article></div><div class="guide-shortcuts"><span><kbd>SPACE</kbd> 누르는 동안 3× 배속</span><span><kbd>P</kbd> 일시정지</span><span>다음 스테이지는 $100과 구피 2마리로 시작해요.</span></div><button id="guide-play" class="primary-button" type="button">내 바다로 돌아가기 <svg><use href="#i-arrow"/></svg></button></dialog>
+  <div id="game-audio" hidden></div>
+  <noscript>게임을 실행하려면 브라우저의 JavaScript를 켜 주세요.</noscript>
+</body>
+</html>

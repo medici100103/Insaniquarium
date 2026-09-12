@@ -14,7 +14,7 @@
     return {
       id, type, ...point, target: Aqua.target(rng), direction: -1,
       speed: Aqua.random(C.swimSpeedMin, C.swimSpeedMax, rng),
-      growth: 1, meals: 0, alive: true, removed: false,
+      growth: 1, meals: 0, alive: true, removed: false, arrival: null,
       hunger: initial ? threshold : 0, hungerThreshold: threshold,
       hungerState: initial ? 'HUNGRY' : 'NORMAL',
       coinTimer: 0, mealTimer: 0, idle: 0, deathTime: 0,

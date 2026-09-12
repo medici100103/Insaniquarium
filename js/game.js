@@ -6,6 +6,8 @@
       this.rng = rng;
       this.nextId = 1;
       this.events = [];
+      // Only held input changes developer speed; gameplay events never reset it.
+      this.speed = 1;
       this.restart();
     }
     emit(type, data = {}) { this.events.push({ type, ...data }); }
@@ -20,7 +22,6 @@
       this.state = 'PLAYING';
       this.scene = 'STAGE';
       this.paused = false;
-      this.speed = 1;
       this.time = 0;
       this.money = C.stages[stage - 1].initialMoney;
       this.capacity = C.initialCapacity;
@@ -42,10 +43,23 @@
     }
     get active() { return this.state === 'PLAYING' && this.scene === 'STAGE' && !this.paused; }
     get living() { return this.fish.filter(f => f.alive); }
+    get underwater() { return this.living.filter(f => f.arrival?.phase !== 'FALLING'); }
     get threat() { return Boolean(this.alien || this.portal); }
+    get eggFrame() { return Math.min(2, this.egg); }
+    needsFood(fish) {
+      return fish.alive && !fish.arrival && (fish.hungerState === 'HUNGRY' || fish.hungerState === 'STARVING');
+    }
     addFish(type = 'GUPPY', initial = false, position) {
       const fish = Aqua.createFish(this.nextId++, type, this.rng, initial, position);
       this.fish.push(fish);
+      return fish;
+    }
+    dropGuppy() {
+      const fish = this.addFish('GUPPY', false, {
+        x: random(C.bounds.left + 85, C.bounds.right - 85, this.rng),
+        y: C.fishDropStartY
+      });
+      fish.arrival = { phase: 'FALLING', velocity: C.fishDropVelocity, time: 0 };
       return fish;
     }
     fail(message) { this.emit('notice', { message, tone: 'error' }); return false; }
@@ -70,7 +84,7 @@
       if (price === undefined) return false;
       if (this.money < price) return this.fail(`$${(price - this.money).toLocaleString()} 더 모으면 구매할 수 있어요.`);
       this.money -= price;
-      if (item === 'guppy') this.addFish();
+      if (item === 'guppy') this.dropGuppy();
       if (item === 'piranha') this.addFish('PIRANHA');
       if (item === 'capacity') this.capacity++;
       if (item === 'egg') this.egg++;
@@ -95,6 +109,7 @@
       return true;
     }
     eat(fish) {
+      if (!this.needsFood(fish)) return false;
       fish.hunger = 0;
       fish.hungerState = 'NORMAL';
       fish.hungerThreshold = random(C.hungerMin, C.hungerMax, this.rng);
@@ -110,6 +125,7 @@
         }
       }
       this.emit('eat', { x: fish.x, y: fish.y });
+      return true;
     }
     checkUnlocks() {
       const max = Math.max(1, ...this.living.filter(f => f.type === 'GUPPY').map(f => f.growth));
@@ -126,6 +142,7 @@
     kill(fish, eaten = false) {
       if (!fish.alive) return;
       fish.alive = false;
+      fish.arrival = null;
       fish.hungerState = 'DEAD';
       fish.deathTime = 0;
       if (eaten) { fish.removed = true; this.emit('chomp', { x: fish.x, y: fish.y }); }
@@ -144,6 +161,24 @@
         if (fish.y >= C.floor) { fish.deathTime += dt; if (fish.deathTime >= C.floorFadeTime) fish.removed = true; }
         return;
       }
+      if (fish.arrival) {
+        const arrival = fish.arrival;
+        if (arrival.phase === 'FALLING') {
+          arrival.velocity += C.fishDropGravity * dt;
+          fish.y += arrival.velocity * dt;
+          if (fish.y >= C.fishDropSurfaceY) {
+            fish.y = C.fishDropSurfaceY;
+            arrival.phase = 'SETTLING'; arrival.time = 0;
+            this.emit('splash', { x: fish.x, y: fish.y });
+          }
+        } else {
+          arrival.time += dt;
+          const t = Math.min(1, arrival.time / C.fishDropSettleDuration);
+          fish.y = C.fishDropSurfaceY + C.fishDropDepth * (1 - (1 - t) ** 3);
+          if (t >= 1) fish.arrival = null;
+        }
+        return;
+      }
       fish.mealTimer = Math.max(0, fish.mealTimer - dt);
       if (!this.threat) {
         fish.hunger += dt;
@@ -152,10 +187,10 @@
         if (hungry >= C.hungryDuration + C.starvingDuration) { this.kill(fish); return; }
       }
       let food = null;
-      if (!this.threat && fish.mealTimer <= 0) {
+      if (!this.threat && fish.mealTimer <= 0 && this.needsFood(fish)) {
         const candidates = fish.type === 'GUPPY'
           ? this.food.filter(f => !f.removed)
-          : fish.hungerState !== 'NORMAL' ? this.living.filter(f => f.type === 'GUPPY' && f.growth === 1) : [];
+          : this.underwater.filter(f => f.type === 'GUPPY' && f.growth === 1);
         food = candidates.reduce((best, f) => !best || distance(fish, f) < distance(fish, best) ? f : best, null);
       }
       if (food) {
@@ -166,7 +201,8 @@
           this.eat(fish);
         }
       } else this.wander(fish, dt);
-      if (fish.type === 'PIRANHA' || fish.growth >= 2) {
+      // Guppy income resumes from the saved timer after the portal/combat ends.
+      if (fish.type === 'PIRANHA' || fish.growth >= 2 && !this.threat) {
         fish.coinTimer += dt;
         const interval = fish.type === 'PIRANHA' ? C.diamondInterval : C.coinInterval;
         if (fish.coinTimer >= interval) {
@@ -198,17 +234,16 @@
       let point = Aqua.target(this.rng), bestGap = -1;
       for (let i = 0; i < 20; i++) {
         const candidate = Aqua.target(this.rng);
-        const gap = Math.min(...this.living.map(f => distance(f, candidate)));
+        const gap = Math.min(...this.underwater.map(f => distance(f, candidate)));
         if (gap > bestGap) { point = candidate; bestGap = gap; }
       }
       this.portal = { id: this.nextId++, ...point, time: 0 };
-      this.speed = 1;
       this.emit('portal', point);
     }
     hitAlien(x, y, source = 'player') {
       if (!this.active || !this.alien) return false;
       const alien = this.alien;
-      alien.hp--;
+      alien.hp -= source === 'marlin' ? C.marlinDamage : 1;
       if (source === 'player') {
         const front = (x - alien.x) * alien.direction >= -10;
         alien.stun = C.alienStun;
@@ -238,7 +273,7 @@
       } else if (!this.alien) {
         this.alienTimer += dt;
         if (!this.warning && this.alienTimer >= C.alienInterval - C.warningDuration) {
-          this.warning = true; this.speed = 1; this.emit('warning');
+          this.warning = true; this.emit('warning');
         }
         if (this.alienTimer >= C.alienInterval) this.spawnPortal();
       } else {
@@ -249,7 +284,7 @@
           alien.x = clamp(alien.x + alien.direction * C.alienSpeed * dt, C.bounds.left, C.bounds.right);
           return;
         }
-        const target = this.living.reduce((best, f) => !best || distance(alien, f) < distance(alien, best) ? f : best, null);
+        const target = this.underwater.reduce((best, f) => !best || distance(alien, f) < distance(alien, best) ? f : best, null);
         if (target) {
           move(alien, target, C.alienSpeed, dt);
           if (distance(alien, target) < C.alienContact) this.kill(target, true);
@@ -271,7 +306,7 @@
       } else { marlin.attackTimer = 0; this.wander(marlin, dt, 48); }
     }
     clearStage() {
-      this.scene = 'HATCHERY'; this.hatchTime = 0; this.speed = 1;
+      this.scene = 'HATCHERY'; this.hatchTime = 0;
       this.emit('clear', { stage: this.stage });
     }
     continueStage() {
@@ -284,16 +319,18 @@
       this.paused = !this.paused;
       this.emit('pause');
     }
-    toggleSpeed() {
-      if (!this.active) return;
-      if (this.threat || this.warning) return this.fail('전투 중에는 1배속으로 진행돼요.');
-      this.speed = this.speed === 1 ? 4 : 1;
+    setSpeedHeld(held) {
+      const speed = held ? C.developerSpeed : 1;
+      if (this.speed === speed) return;
+      this.speed = speed;
       this.emit('speed');
     }
     update(dt) {
       if (!Number.isFinite(dt) || dt <= 0 || this.paused || this.state !== 'PLAYING') return;
       if (this.scene === 'HATCHERY') {
+        const previousTime = this.hatchTime;
         this.hatchTime += dt;
+        if (previousTime < C.eggCrackTime && this.hatchTime >= C.eggCrackTime) this.emit('hatch');
         if (this.stage === 3 && this.hatchTime >= C.hatchDuration) { this.scene = 'ENDING'; this.emit('ending'); }
         return;
       }
@@ -324,7 +361,7 @@
       this.food = this.food.filter(f => !f.removed);
       this.coins = this.coins.filter(c => !c.removed);
       if (this.living.length === 0) {
-        this.state = 'GAME_OVER'; this.speed = 1; this.emit('gameover');
+        this.state = 'GAME_OVER'; this.emit('gameover');
       }
     }
   }
